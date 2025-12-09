@@ -1,21 +1,25 @@
 import requests
-import csv
+import sqlite3
+import pandas as pd
 import progressbar
 import time
+import datetime
 
-API_KEY = "RIO7ytwWRZ387DM6iPhMjpXdy"
-BASE_URL = "https://raider.io/"
-STATIC_DATA_URL = "api/v1/mythic-plus/static-data"
-RUNS_URL = "api/v1/mythic-plus/runs"
-REGION = "us"
+CLIENT_ID = "db7c135ef2f14e4381d0669283fd273b"
+CLIENT_SECRET = "8yZ3aEgaDoP7rErZ1YChG1k5idbPD17U"
+NAMESPACE = "profile-us"
+LOCALE = "en-US"
 SEASON = "season-tww-2"
-EXPANSION_ID_TWW = 10      #Expansion number in order. 10 = TWW, 9 = DF, etc.
-AFFIXES_TWW_S2 = ['xalataths-bargain-ascendant',
-                  'xalataths-bargain-voidbound',
-                  'xalataths-bargain-devour',
-                  'xalataths-bargain-pulsar']
-PAGE_LIMIT = 1000
-
+ACHIEVEMENT_IDS =   {"season-tww-2":
+                       {
+                           "KSE": 40949,
+                           "KSC": 40950,
+                           "KSM": 41533,
+                           "KSH": 40952,
+                           "KSL": 40951,
+                           "Title": 40954,
+                       },
+                    }
 
 def describe(data, indent=0):
     pad = "  " * indent
@@ -29,120 +33,98 @@ def describe(data, indent=0):
               f"{type(data[0]).__name__ if data else 'EMPTY'}")
         if data:
             describe(data[0], indent + 1)   # describe one example item
-    else:
-        print(f"{pad}{type(data).__name__}")
 
-def api_call(suffix, params):
-    params["access_key"] = API_KEY
+def get_bnet_access_token(id,secret):
+    url = "https://oauth.battle.net/token"
+
+    response = requests.post(
+        url,
+        data={"grant_type": "client_credentials"},
+        auth=(id, secret)
+    )
+
+    response.raise_for_status()  # raises exception on 4xx/5xx
+    token = response.json()["access_token"]
+    return token
+
+def bnet_api_call(suffix, params, token, region="us"):
+    base_url = f"https://{region}.api.blizzard.com"
+    header = {"Authorization": f"Bearer {token}"}
+    params["namespace"] = NAMESPACE
+    params["locale"] = LOCALE
     attempts=1
     while True:
         try:
-            r = requests.get(BASE_URL + suffix,params)
-            r.raise_for_status()
+            response = requests.get(base_url + suffix,params=params, headers=header)
+            response.raise_for_status()
             break
         except:
             print(f"Attempt {attempts} failed. Retrying...")
             attempts += 1
             time.sleep(1)
-    return r.json()
+    return response.json()
 
-def fetch_dungeons(expansion,season):
-    """Gets the pool of the dungeons for the season."""
-    params = {
-        "expansion_id": expansion
+def get_character_achievements(characterName, realmSlug, token):
+    """Makes an API call for character achievement info.
+
+    API call gives a dict, the key ["Achivement"] is a list of dicts
+    with keys "id" (number), "achievement" (name), and "completed_timestamp".
+
+    Keyword arguments:
+        characterName -- the name of the character.
+        realmSlug -- the slug of the realm, eg wyrmrest-accord
+        token - oauth token, probably from get_bnet_access_token()
+    """
+    suffix = f"/profile/wow/character/{realmSlug}/{characterName.lower()}/achievements"
+        #API requires name to be lowercase
+    return bnet_api_call(suffix, params={}, token=token)["achievements"]
+
+def get_achievement_time(achievements, target_id):
+    """Returns completion time of an achievement, or None if incomplete.
+
+    Keyword arguments:
+          achievements -- the list of achievements, probably from get_character_achievements()
+          target_id -- the id of the achievement you want, look up in ACHIEVEMENT_IDS
+    """
+    for entry in achievements:
+        if entry["id"] == target_id:
+            x = entry["completed_timestamp"] #Unix timestamp in milliseconds
+            return x
+            #return datetime.datetime.fromtimestamp(x/1000)
+    return None
+
+def make_achievement_columns(name, realm, token, season=SEASON):
+    ids = ACHIEVEMENT_IDS[season]
+    achievements = get_character_achievements(name, realm, token)
+    achievementStatus = {
+        "KSE": get_achievement_time(achievements, ids["KSE"]),
+        "KSC": get_achievement_time(achievements, ids["KSC"]),
+        "KSM": get_achievement_time(achievements, ids["KSM"]),
+        "KSH": get_achievement_time(achievements, ids["KSH"]),
+        "KSL": get_achievement_time(achievements, ids["KSL"]),
+        "Title": get_achievement_time(achievements, ids["Title"]),
     }
-    r = api_call(STATIC_DATA_URL, params)["seasons"]
-    season_static_data =(
-        next((item for item in r if item["slug"] == season), None))
-    dungeons = season_static_data["dungeons"]
-    names = [item["name"] for item in dungeons]
-    return names
+    return achievementStatus
 
-def make_affix_combos(season_affixes):
+conn = sqlite3.connect("TWW_S2.db")
+df = pd.read_sql_query(
     """
-    Keystones have a variety of affixes, varying by week and level.
-    Generates the list of all possible combinations.
-    """
-    #No affix at +2 to +3
-    affix_list = []
-    for affix in season_affixes:
-        #Just the bargain affix at +4
-        affix_list.append(affix)
-        """
-        The affix combos below are illegal in raider.io API for some reason.
-        #Bargain and fort or tyran at +7
-        affix_list.append(affix+'-tyrannical')
-        affix_list.append(affix+'-fortified')
-        """
-        #Bargain and fort and tyran at +10
-        affix_list.append(affix+'-tyrannical-fortified')
-        #Drop bargain, add guile at +12
-    affix_list.append('tyrannical-fortified-xalataths-guile')
-    return affix_list
+    SELECT *
+    FROM characters
+    ORDER BY name
+    LIMIT 5
+    """,
+    conn
+    )
+print(df)
 
-def fetch_run_page(page,dungeon='all',affixes='all'):
-    """
-    Fetch one page of runs from the raider.io API.
-    Each API call returns a dict['rankings','leaderboard_url','params'].
-    'rankings' is a list of runs, each a dict['rank','score','run'].
-    'run' is a dict with many keys, the relevant one is 'roster'.
-    'roster' is a list[5] of dict['character','role'].
-    'character' has many keys, the important ones are 'name', 'realm','spec'.
-    """
-    params = {
-        "season": SEASON,
-        "region": REGION,
-        "dungeon": dungeon,
-        "affixes": affixes,
-        "page": page,
-    }
-    return api_call(RUNS_URL, params)['rankings']
+token = get_bnet_access_token(CLIENT_ID, CLIENT_SECRET)
 
-def make_rows_by_character(pagerow):
-    """From a page of rankings from fetch_run(), gets one run
-    and makes 5 rows describing the run, one for each character.
-    """
-    roster_dict = pagerow['run']['roster']
-    rows = []
-    for character_dict in roster_dict:
-        rows.append([
-            pagerow['run']['dungeon']['name'],
-            pagerow['run']['mythic_level'],
-            pagerow['score'],
-            character_dict['character']['name'],
-            character_dict['character']['realm']['name'],
-            character_dict['character']['class']['name'],
-            character_dict['character']['spec']['name'],
-            character_dict['role'],
-        ])
-    return rows
+df["KSE","KSC","KSM","KSH","KSL","Title"] = df.apply(
+    lambda row: make_achievement_columns(row["Name"], row["Realm"], token),
+    axis=1)
 
-def make_file(filename):
-    with open(filename, 'w', newline='') as csvfile:
-        writer = csv.writer(csvfile)
-        header = ['Dungeon',
-                  'Level',
-                  'Score',
-                  'Name',
-                  'Realm',
-                  'Class',
-                  'Spec',
-                  'Role',
-                  ]
-        writer.writerow(header)
-
-dungeon_list = fetch_dungeons(EXPANSION_ID_TWW,SEASON)
-affix_list = make_affix_combos(AFFIXES_TWW_S2)
-
-make_file('runs.csv')
-bar = progressbar.ProgressBar(max_value=len(dungeon_list)*len(affix_list)*PAGE_LIMIT)
-with open('runs.csv', 'a', newline='') as csvfile:
-    writer = csv.writer(csvfile)
-    for pagenum in range(PAGE_LIMIT):
-        for affix in affix_list:
-            for dungeon in dungeon_list:
-                page = fetch_run_page(pagenum,dungeon,affix)
-                bar.increment()
-                for pagerow in page:
-                    rows = make_rows_by_character(pagerow)
-                    writer.writerows(rows)
+#
+# #x = get_character_achievements("Ravicana", "wyrmrest-accord", token)
+# #describe(x)
+# print(make_achievement_columns("Ravicana", "wyrmrest-accord", token))
