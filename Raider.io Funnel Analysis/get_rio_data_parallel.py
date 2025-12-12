@@ -1,7 +1,9 @@
 import requests
 import progressbar
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
 import json
+import threading
 
 API_KEY = 'RIOHdZVtbhmmSsTQqiKMTyMqK'
 PREFIX = 'https://raider.io/'
@@ -15,6 +17,35 @@ AFFIXES_TWW_S2 = ['xalataths-bargain-ascendant',
                   'xalataths-bargain-devour',
                   'xalataths-bargain-pulsar']
 PAGE_LIMIT = 1001
+
+class RateLimiter:
+    def __init__(self,limit,period):
+        self.limit = limit
+        self.period = period
+        self.tokens = -1 #We start 1 in the hole from getting dungeons
+        self.updated = time.time()
+        self.lock = threading.Lock()
+
+    def acquire(self):
+        with self.lock:
+            while True:
+                now = time.time()
+                elapsed = now - self.updated
+                self.updated = now
+
+                #Increment tokens based on time passed
+                self.tokens += elapsed * (self.limit / self.period)
+                if self.tokens > self.limit:
+                    self.tokens = self.limit
+
+                #If not enough tokens, wait
+                if self.tokens <1:
+                    time_to_wait = (1 - self.tokens) / (self.limit / self.period)
+                    time.sleep(time_to_wait)
+                    #self.tokens = 0
+                if self.tokens >= 1:
+                    self.tokens -= 1
+                    break
 
 def describe(data, indent=0):
     pad = '  ' * indent
@@ -110,6 +141,31 @@ def fetch_run_page(page,dungeon='all',affixes='all', season_slug=SEASON_SLUG, re
     #print(f'\rgot response for {page},{dungeon},{affixes}', end='')
     return response
 
+# def parallel_fetch_pages(dungeons, affix_combos, page_limit=PAGE_LIMIT, max_workers=4):
+#     futures = []
+#     pages = []
+#     bar_get = progressbar.ProgressBar(max_value=len(dungeons)*len(affix_combos)*page_limit)
+#     bar_append = progressbar.ProgressBar(max_value=len(dungeons)*len(affix_combos)*page_limit)
+#     limiter = RateLimiter(limit=16, period=1)
+#     # i = 0
+#     # j = 0
+#     with ThreadPoolExecutor(max_workers=max_workers) as executor:
+#         for pagenum in range(page_limit):
+#             for affix_combo in affix_combos:
+#                 for dungeon in dungeons:
+#                     limiter.acquire()
+#                     futures.append(
+#                         executor.submit(fetch_run_page,pagenum,dungeon,affix_combo)
+#                     )
+#                     bar_get.increment()
+#         for future in as_completed(futures):
+#             page = future.result()
+#             #print(f'\racquired for {i}, completed for {j}', end='')
+#             # j += 1
+#             pages.append(page)
+#             bar_append.increment()
+#     return pages
+
 def write_jsonl(data, filename, mode='a'):
     with open(filename, mode) as file:
         for object in data:
@@ -143,19 +199,73 @@ def write_jsonl(data, filename, mode='a'):
 #             'Role':             character_dict['role'],
 #         })
 #     return rows
+#
+# def parallel_fetch_rows(dungeons, affixes, page_limit=PAGE_LIMIT, max_workers=20):
+#     futures = []
+#     rows = []
+#
+#     bar = progressbar.ProgressBar(max_value=len(dungeons)*len(affixes)*page_limit)
+#     with ThreadPoolExecutor(max_workers=max_workers) as executor:
+#         for pagenum in range(page_limit):
+#             for affix in affixes:
+#                 for dungeon in dungeons:
+#                     futures.append(
+#                         executor.submit(fetch_run_page,pagenum,dungeon,affix)
+#                     )
+#         for future in as_completed(futures):
+#             page = future.result()
+#             for pagerow in page:
+#                 rows.extend(make_rows_by_character(pagerow))
+#             bar.increment()
+#
+#     return rows
 
 dungeon_list = fetch_dungeons()
 affix_list = make_affix_combos(AFFIXES_TWW_S2)
 
-pages = []
-bar = progressbar.ProgressBar(
-  max_value=len(dungeon_list) * len(affix_list) * PAGE_LIMIT)
-for pagenum in range(PAGE_LIMIT):
-    for affix_combo in affix_list:
-        for dungeon in dungeon_list:
-            pages.append(fetch_run_page(pagenum,dungeon,affix_combo))
-            bar.increment()
-with open('rio_data_raw_tww_s2.jsonl','w') as file:
-    for page in pages:
-        for row in page:
-            file.write(json.dumps(row) + '\n')
+OUTPUT_FILE = 'rio_data_tww_s2.jsonl'
+#Make a blank file to append to
+with open(OUTPUT_FILE, 'w') as file: pass
+futures = []
+bar_get = progressbar.ProgressBar(
+    max_value=len(dungeon_list) * len(affix_list) * PAGE_LIMIT)
+bar_append = progressbar.ProgressBar(
+    max_value=len(dungeon_list) * len(affix_list) * PAGE_LIMIT)
+limiter = RateLimiter(limit=16, period=1)
+with ThreadPoolExecutor(max_workers=4) as executor:
+    for pagenum in range(PAGE_LIMIT):
+        for affix_combo in affix_list:
+            for dungeon in dungeon_list:
+                limiter.acquire()
+                futures.append(
+                    executor.submit(fetch_run_page, pagenum, dungeon, affix_combo)
+                )
+                bar_get.increment()
+    for future in as_completed(futures):
+        write_jsonl(future.result(),OUTPUT_FILE)
+        bar_append.increment()
+
+# pages = []
+# bar = progressbar.ProgressBar(
+#   max_value=len(dungeon_list) * len(affix_list) * PAGE_LIMIT)
+# for pagenum in range(PAGE_LIMIT):
+#     for affix_combo in affix_list:
+#         for dungeon in dungeon_list:
+#             pages.append(fetch_run_page(pagenum,dungeon,affix_combo))
+#             bar.increment()
+
+#pages = parallel_fetch_pages(dungeon_list, affix_list)
+
+#save_jsonl(pages, 'rio_data_tww_s2.jsonl', mode='w')
+
+# bar = progressbar.ProgressBar(max_value=len(dungeon_list)*len(affix_list)*PAGE_LIMIT)
+# with open('runs.csv', 'a', newline='') as csvfile:
+#     writer = csv.writer(csvfile)
+#     for pagenum in range(PAGE_LIMIT):
+#         for affix in affix_list:
+#             for dungeon in dungeon_list:
+#                 page = fetch_run_page(pagenum,dungeon,affix)
+#                 bar.increment()
+#                 for pagerow in page:
+#                     rows = make_rows_by_character(pagerow)
+#                     writer.writerows(rows)
