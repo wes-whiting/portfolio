@@ -1,4 +1,4 @@
-# Background and Goals
+# Background and Overview
 
 # Data Structure Overview
 
