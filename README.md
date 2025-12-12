@@ -1,4 +1,4 @@
-# Background and Overview
+# Project Background and Overview
 
 # Data Structure Overview
 
@@ -7,3 +7,5 @@
 # Insights Deep Dive
 
 # Recommendations
+
+# Limitations & Assumptions
