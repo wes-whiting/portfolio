@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="DataSourcePerFileMappings">
+    <file url="file://$PROJECT_DIR$/queries/clean_runs_raw.sql" value="96ba8713-b310-46b3-8605-42fe97371287" />
+    <file url="file://$PROJECT_DIR$/queries/make_tables.sql" value="96ba8713-b310-46b3-8605-42fe97371287" />
+    <file url="file://$PROJECT_DIR$/queries/make_thresholds.sql" value="96ba8713-b310-46b3-8605-42fe97371287" />
+    <file url="file://$PROJECT_DIR$/queries/test queries.sql" value="96ba8713-b310-46b3-8605-42fe97371287" />
+  </component>
+</project>

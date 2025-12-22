@@ -2,8 +2,12 @@ import requests
 import progressbar
 import time
 import json
+import os
+from dotenv import load_dotenv
 
-API_KEY = 'RIOHdZVtbhmmSsTQqiKMTyMqK'
+load_dotenv()
+
+API_KEY = os.getenv('RIO_API_KEY')
 PREFIX = 'https://raider.io/'
 STATIC_DATA_URL = 'api/v1/mythic-plus/static-data'
 RUNS_URL = 'api/v1/mythic-plus/runs'
@@ -14,7 +18,7 @@ AFFIXES_TWW_S2 = ['xalataths-bargain-ascendant',
                   'xalataths-bargain-voidbound',
                   'xalataths-bargain-devour',
                   'xalataths-bargain-pulsar']
-PAGE_LIMIT = 1001
+PAGE_LIMIT = 1000
 
 def describe(data, indent=0):
     pad = '  ' * indent
@@ -150,7 +154,7 @@ affix_list = make_affix_combos(AFFIXES_TWW_S2)
 pages = []
 bar = progressbar.ProgressBar(
   max_value=len(dungeon_list) * len(affix_list) * PAGE_LIMIT)
-for pagenum in range(PAGE_LIMIT):
+for pagenum in range(PAGE_LIMIT+1):
     for affix_combo in affix_list:
         for dungeon in dungeon_list:
             pages.append(fetch_run_page(pagenum,dungeon,affix_combo))
