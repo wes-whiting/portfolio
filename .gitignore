@@ -7,3 +7,5 @@ raider.io_funnel_analysis/Defunct/tww_s2_characters.csv
 raider.io_funnel_analysis/Defunct/runs_raw.parquet
 raider.io_funnel_analysis/Defunct/tww_s2.db
 portfolio_backup/
+raider.io_funnel_analysis/queries/test queries.sql
+raider.io_funnel_analysis/queries/test queries.sql
