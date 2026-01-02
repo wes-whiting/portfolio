@@ -1,6 +1,7 @@
 /* Make timestamp columns for character rating thresholds */
 ALTER TABLE characters
     ADD COLUMN IF NOT EXISTS peak_rating float,
+    ADD COLUMN IF NOT EXISTS kse timestamptz,
     ADD COLUMN IF NOT EXISTS ksc timestamptz,
     ADD COLUMN IF NOT EXISTS ksm timestamptz,
     ADD COLUMN IF NOT EXISTS ksh timestamptz,
@@ -13,6 +14,7 @@ ALTER TABLE characters
 UPDATE characters
 SET
     peak_rating = subquery.peak_rating,
+    kse = subquery.kse,
     ksc = subquery.ksc,
     ksm = subquery.ksm,
     ksh = subquery.ksh,
@@ -27,6 +29,7 @@ FROM (
             realm,
             class,
             spec,
+            min(timestamp) FILTER (WHERE total_score > 0) AS kse,
             min(timestamp) FILTER (WHERE total_score >= 1500) AS ksc,
             min(timestamp) FILTER (WHERE total_score >= 2000) AS ksm,
             min(timestamp) FILTER (WHERE total_score >= 2500) AS ksh,

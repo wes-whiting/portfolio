@@ -41,7 +41,7 @@ BEGIN
         'CREATE TABLE runs_enriched AS
         SELECT *, (%s) AS total_score
         FROM (
-            SELECT name, realm, class, spec, dungeon, timestamp, score, %s
+            SELECT name, realm, class, spec, dungeon, timestamp, score, role, %s
             FROM runs_raw
         ) t',
         sum_score_columns,
@@ -59,7 +59,7 @@ CREATE INDEX idx_enriched
 DROP TABLE IF EXISTS characters;
 CREATE TABLE characters AS
 SELECT
-    name, realm, class, spec,
+    name, realm, class, spec, role,
     count(*) AS run_count
 FROM runs_raw
-GROUP BY name, realm, class, spec;
+GROUP BY name, realm, class, spec, role;
