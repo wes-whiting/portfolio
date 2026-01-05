@@ -5,6 +5,7 @@ import psycopg2
 from sqlalchemy import create_engine
 import os
 from dotenv import load_dotenv
+from io import StringIO
 
 load_dotenv()
 DB_USER = os.getenv('DB_USER')
@@ -35,6 +36,8 @@ def make_rows_by_character(run):
             'class':            character_dict['character']['class']['name'],
             'spec':             character_dict['character']['spec']['name'],
             'role':             character_dict['role'],
+            'race':             character_dict['character']['race']['name'],
+            'faction':          character_dict['character']['faction'],
         })
     return rows
 
@@ -62,6 +65,13 @@ def read_file(filename):
     df = pd.DataFrame(line_list)
     return df
 
+def check_exists_database(cursor, name):
+    cursor.execute(
+        f'SELECT 1 FROM pg_database WHERE datname = \'{name}\';'
+    )
+    exists = cursor.fetchone()
+    return exists
+
 def make_database(name):
     print('Making database...')
     connection = psycopg2.connect(
@@ -73,23 +83,66 @@ def make_database(name):
         )
     connection.autocommit = True
     cursor = connection.cursor()
-    cursor.execute(f'DROP DATABASE IF EXISTS {name}')
-    cursor.execute(f'CREATE DATABASE IF NOT EXISTS {name}')
+
+    exists = check_exists_database(cursor, name)
+    if not exists:
+        cursor.execute(f'CREATE DATABASE {name}')
     connection.close()
 
-make_database('raider_io_funnel_analysis')
+def write_to_database(df, db_name, table_name):
+    db_url = f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{db_name}'
+    engine = create_engine(db_url)
 
-runs_raw = read_file(INFILE)
+    #Create an empty table
+    df.head(0).to_sql(
+        table_name,
+        engine,
+        index=False,
+        if_exists='replace',
+    )
+
+    #Write to the table with COPY, much faster than .to_sql
+    connection = psycopg2.connect(
+        dbname=db_name,
+        user=DB_USER,
+        password=DB_PASSWORD,
+        host=DB_HOST,
+        )
+    cursor = connection.cursor()
+
+    buffer = StringIO()
+    df.to_csv(buffer, index=False, header=False)
+    buffer.seek(0)
+
+    cursor.copy_expert(
+        f"""
+        COPY {table_name} ({', '.join(df.columns)})
+        FROM STDIN WITH (FORMAT CSV)
+        """,
+        buffer
+        )
+
+    connection.commit()
+    cursor.close()
+    connection.close()
+
+db_name = 'raider_io_funnel_analysis'
+make_database(db_name)
+
+df_runs_raw = read_file(INFILE)
 
 print('Making table...')
-engine = create_engine(POSTGRES_URL)
-runs_raw.to_sql(
-    name='runs_raw',
-    con=engine,
-    if_exists='replace',
-    index=False,
-    method='multi',
-    chunksize=1000,
-)
+write_to_database(df_runs_raw, db_name, 'runs_raw')
+# db_url = f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{db_name}'
+# engine = create_engine(db_url)
+# print('Making table...')
+# runs_raw.to_sql(
+#     name='runs_raw',
+#     con=engine,
+#     if_exists='replace',
+#     index=False,
+#     method='multi',
+#     chunksize=10000
+#     )
 
 print('Done!')

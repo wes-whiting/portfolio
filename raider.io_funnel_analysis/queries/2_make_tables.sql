@@ -58,8 +58,6 @@ CREATE INDEX idx_enriched
 /* Make character table */
 DROP TABLE IF EXISTS characters;
 CREATE TABLE characters AS
-SELECT
-    name, realm, class, spec, role,
-    count(*) AS run_count
-FROM runs_raw
-GROUP BY name, realm, class, spec, role;
+SELECT DISTINCT
+    name, realm, class, spec, role, race, faction
+FROM runs_raw;
