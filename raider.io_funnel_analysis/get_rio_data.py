@@ -20,20 +20,16 @@ AFFIXES_TWW_S2 = ['xalataths-bargain-ascendant',
                   'xalataths-bargain-pulsar']
 PAGE_LIMIT = 1000
 
-def describe(data, indent=0):
-    pad = '  ' * indent
-    if isinstance(data, dict):
-        print(f'{pad}Dict with keys:')
-        for k, v in data.items():
-            print(f'{pad}- {k}: ({type(v).__name__})')
-            describe(v, indent + 1)
-    elif isinstance(data, list):
-        print(f'{pad}List[{len(data)}] of '
-              f'{type(data[0]).__name__ if data else "EMPTY"}')
-        if data:
-            describe(data[0], indent + 1)   # describe one example item
-
 def rio_api_call(suffix, params, prefix = PREFIX, key = API_KEY):
+    """Makes a call to the Raider.IO API. API documentation can be found at https://raider.io/api#/
+
+    Keyword arguments:
+        suffix -- suffix to append to the end of the url. Determines the type of API call.
+        params -- dict of key-value pairs for parameters to the API call, eg 'region': 'us'
+        prefix -- base URL for the API, normally 'https://raider.io/'
+        key -- Authentication key for a Raider.IO application. Authentication is not required,
+            but raises rate limit and page limit.
+    """
     params['access_key'] = key
     attempts = 1
     while True:
@@ -49,7 +45,12 @@ def rio_api_call(suffix, params, prefix = PREFIX, key = API_KEY):
     return r.json()
 
 def fetch_dungeons(expansion_id=EXPANSION_ID,season_slug=SEASON_SLUG):
-    """Gets the pool of the dungeons for the season."""
+    """Gets the pool of available keystone dungeons for the season.
+
+    Keyword arguments:
+        expansion_id -- expansion number in order. 10 = TWW, 9 = DF, etc.
+        season_slug -- slug title for the season, eg 'season-tww-2'
+    """
     params = {
         'expansion_id': expansion_id
     }
@@ -71,7 +72,7 @@ def make_affix_combos(season_affixes):
     will need to handle cases by season.
 
     Keyword arguments:
-        season_affixes -- A list of rotating weekly affixes.
+        season_affixes -- The list of rotating weekly affixes.
     """
     affix_list = []
     for affix in season_affixes:
@@ -115,51 +116,33 @@ def fetch_run_page(page,dungeon='all',affixes='all', season_slug=SEASON_SLUG, re
     return response
 
 def write_jsonl(data, filename, mode='a'):
+    """Writes a list of dicts to a .jsonl file, with each dict becoming one JSON line.
+
+    Keyword arguments:
+        data -- a list of dicts.
+        filename -- the string name of the file.
+        mode -- 'a' to append to the end of the file, 'w' to overwrite entirely.
+    """
     with open(filename, mode) as file:
         for object in data:
             file.write(json.dumps(object) + '\n')
 
-# def make_rows_by_character(pagerow):
-#     """From a page of rankings from fetch_run(), gets one run
-#     and makes 5 rows describing the run, one for each character.
-#     """
-#     roster_list = pagerow['run']['roster']
-#     rows = []
-#     for character_dict in roster_list:
-#         rows.append({
-#             'Dungeon':          pagerow['run']['dungeon']['name'],
-#             'dungeon_short':    pagerow['run']['dungeon']['short_name'],
-#             'dungeon_slug':     pagerow['run']['dungeon']['slug'],
-#             'Level':            pagerow['run']['mythic_level'],
-#             'Time':             pagerow['run']['completed_at'],
-#             'Status':           pagerow['run']['status'],
-#             'num_chests':       pagerow['run']['num_chests'],
-#             'Score':            pagerow['score'],
-#             'Name':             character_dict['character']['name'],
-#             'id':               character_dict['character']['id'],
-#             'Realm':            character_dict['character']['realm']['name'],
-#             'realm_slug':       character_dict['character']['realm']['slug'],
-#             'Class':            character_dict['character']['class']['name'],
-#             'Race':             character_dict['character']['race'],
-#             'Faction':          character_dict['character']['faction'],
-#             'isTransfer':       character_dict['isTransfer'],
-#             'Spec':             character_dict['character']['spec']['name'],
-#             'Role':             character_dict['role'],
-#         })
-#     return rows
+def main():
+    dungeon_list = fetch_dungeons()
+    affix_list = make_affix_combos(AFFIXES_TWW_S2)
 
-dungeon_list = fetch_dungeons()
-affix_list = make_affix_combos(AFFIXES_TWW_S2)
+    pages = []
+    bar = progressbar.ProgressBar(
+      max_value=len(dungeon_list) * len(affix_list) * PAGE_LIMIT)
+    for pagenum in range(PAGE_LIMIT+1):
+        for affix_combo in affix_list:
+            for dungeon in dungeon_list:
+                pages.append(fetch_run_page(pagenum,dungeon,affix_combo))
+                bar.increment()
+    with open('rio_data_raw_tww_s2.jsonl','w') as file:
+        for page in pages:
+            for row in page:
+                file.write(json.dumps(row) + '\n')
 
-pages = []
-bar = progressbar.ProgressBar(
-  max_value=len(dungeon_list) * len(affix_list) * PAGE_LIMIT)
-for pagenum in range(PAGE_LIMIT+1):
-    for affix_combo in affix_list:
-        for dungeon in dungeon_list:
-            pages.append(fetch_run_page(pagenum,dungeon,affix_combo))
-            bar.increment()
-with open('rio_data_raw_tww_s2.jsonl','w') as file:
-    for page in pages:
-        for row in page:
-            file.write(json.dumps(row) + '\n')
+if __name__ == '__main__':
+    main()

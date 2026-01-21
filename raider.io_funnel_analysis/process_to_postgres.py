@@ -17,8 +17,39 @@ POSTGRES_URL = f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NA
 
 INFILE = 'rio_data_raw_tww_s2.jsonl'
 
+def describe(data, indent=0, tabsize=4):
+    """Maps the structure of nested dicts and lists, and prints it as an indented list.
+
+    This is a helper function used during development, but is not used in the final pipeline.
+    The Raider.IO API returns large JSON objects with lots of nesting, and their structure is not
+    in the documentation, so mapping out keys and their location is helpful to locate the desired
+    data, which may be scattered at various levels of nesting.
+    See make_rows_by_character() below for examples.
+
+    Keyword arguments:
+        data -- a dict or list to be mapped
+        indent -- the starting level of indentation, increments with each recursive call
+        tabsize -- the number of spaces to indent each level
+    """
+    pad = ' ' * tabsize * indent
+    if isinstance(data, dict):
+        print(f'{pad}Dict with keys:')
+        for k, v in data.items():
+            print(f'{pad}- {k}: ({type(v).__name__})')
+            describe(v, indent + 1)
+    elif isinstance(data, list):
+        print(f'{pad}List[{len(data)}] of '
+              f'{type(data[0]).__name__ if data else "EMPTY"}')
+        if data:
+            describe(data[0], indent + 1)   # describe one example item
+
 def make_rows_by_character(run):
-    """From the dict for one run, makes one row for each character.
+    """From the dict for one run, makes one row for each character and returns a list of rows.
+
+    The relevant keys were located with the help of describe() above.
+
+    Keyword arguments:
+        run -- a dict representing one run from the Raider.IO leaderboard.
     """
     roster_list = run['run']['roster']
     rows = []
@@ -26,10 +57,7 @@ def make_rows_by_character(run):
         rows.append({
             'dungeon':          run['run']['dungeon']['name'],
             'dungeon_short':    run['run']['dungeon']['short_name'],
-            'level':            run['run']['mythic_level'],
-            'timestamp':        run['run']['completed_at'],
-            'status':           run['run']['status'],
-            'num_chests':       run['run']['num_chests'],
+            'completed_at':     run['run']['completed_at'],
             'score':            run['score'],
             'name':             character_dict['character']['name'],
             'realm':            character_dict['character']['realm']['name'],
@@ -42,6 +70,11 @@ def make_rows_by_character(run):
     return rows
 
 def count_lines(filename):
+    """Returns the number of lines in a .jsonl file.
+
+    Keyword arguments:
+        filename -- the name of the jsonl file to be counted.
+    """
     line_count = 0
     with open(filename, 'r') as f:
         for line in f:
@@ -50,6 +83,17 @@ def count_lines(filename):
     return line_count
 
 def read_file(filename):
+    """Reads a .jsonl file and returns a dataframe that will become the table runs_raw.
+
+    From a .jsonl file containing the raw JSON responses from the Raider.IO API, reads out the
+    relevant data and forms it into one row per character per run. These rows are returned in a
+    dataframe, which can later be made into an SQL database table.
+
+    Displays a progress bar, since this can take several minutes for the data from a full season.
+
+    Keyword arguments:
+        filename -- the name of the .jsonl file where the Raider.IO API run data is saved.
+    """
     print('Counting lines...')
     line_count = count_lines(filename)
     print('Line count: ', line_count)
@@ -66,6 +110,12 @@ def read_file(filename):
     return df
 
 def check_exists_database(cursor, name):
+    """Checks if a PostgreSQL database already exists.
+
+    Keyword arguments:
+        cursor -- the database connection cursor object
+        name -- the string name of the database to check for
+    """
     cursor.execute(
         f'SELECT 1 FROM pg_database WHERE datname = \'{name}\';'
     )
@@ -73,6 +123,11 @@ def check_exists_database(cursor, name):
     return exists
 
 def make_database(name):
+    """Creates an empty PostgreSQL database.
+
+    Keyword arguments:
+        name -- the string name of the database to be created
+    """
     print('Making database...')
     connection = psycopg2.connect(
         database=DB_NAME,
@@ -90,6 +145,17 @@ def make_database(name):
     connection.close()
 
 def write_to_database(df, db_name, table_name):
+    """Writes a dataframe to a PostgreSQL database as a table.
+
+    Since the dataframe for a full season is large, this operation can be very slow with
+    the native .to_sql function from pandas. Instead, we use the COPY command in SQL,
+    which is much faster, on the order of 1 minute instead of 40.
+
+    Keywords arguments:
+        df -- the dataframe to write
+        db_name -- the string name of the database
+        table_name -- the string name for the new table
+    """
     db_url = f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{db_name}'
     engine = create_engine(db_url)
 
@@ -126,23 +192,16 @@ def write_to_database(df, db_name, table_name):
     cursor.close()
     connection.close()
 
-db_name = 'raider_io_funnel_analysis'
-make_database(db_name)
+def main():
+    db_name = 'raider_io_funnel_analysis'
+    make_database(db_name)
 
-df_runs_raw = read_file(INFILE)
+    df_runs_raw = read_file(INFILE)
 
-print('Making table...')
-write_to_database(df_runs_raw, db_name, 'runs_raw')
-# db_url = f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{db_name}'
-# engine = create_engine(db_url)
-# print('Making table...')
-# runs_raw.to_sql(
-#     name='runs_raw',
-#     con=engine,
-#     if_exists='replace',
-#     index=False,
-#     method='multi',
-#     chunksize=10000
-#     )
+    print('Making table...')
+    write_to_database(df_runs_raw, db_name, 'runs_raw')
 
-print('Done!')
+    print('Done!')
+
+if __name__ == '__main__':
+    main()

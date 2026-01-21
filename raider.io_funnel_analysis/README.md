@@ -21,6 +21,13 @@ This repository includes:
 
 ![Data pipeline image](pipeline.svg)
 
+The raw data from the Raider.IO API comes in JSON format with a complex nested structure and many keys, much of it irrelevant for our purpose. I queried the data in Python and stored the raw responses as a large .jsonl file. This gives a clean separation between data procurement and data processing, and allows me to include additional metrics in the future without needing to re-query the API. Then, I flattened the JSON data to one row per character and dungeon run, keeping only the relevant attributes: character demographic data (name, realm, class, spec, role, faction, race) and run data (dungeon, level, completion time, score).
+
+These rows were inserted into a PostgreSQL database in a table `runs_raw`. At this step, I cleaned the data with SQL queries to drop null entries and anonymized characters, and convert timestamp data from strings to the proper data type `timestamptz`. Since data will be tabulated character-wise, I made an index on `(name, realm, class, spec)` since these keys together uniquely identify a character.
+
+For each character, we want to construct their score history. This means that on each run, we annotate their running max score for each dungeon, and their running total score, creating a new annotated table `runs_enriched`. For this project I used TWW season 2, but to make the query reusable for another season with a different dungeon pool, I first generated a small dimension table `dungeons` and used it to dynamically generate the running max columns.
+
+With the score history reconstructed, we can finally make a table `characters`, aggregating data from individual runs to determine if and when each character crossed each progression milestone. The `characters` table contains the data used in the final dashboard.
 
 # Executive Summary
 
