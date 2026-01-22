@@ -5,11 +5,8 @@ WHERE
     OR realm = 'Anonymous'
     OR dungeon IS NULL
     OR dungeon_short IS NULL
-    OR level IS NULL
-    OR timestamp IS NULL
-    OR timestamp::timestamptz IS NULL
-    OR status IS NULL
-    OR num_chests IS NULL
+    OR completed_at IS NULL
+    OR completed_at::timestamptz IS NULL
     OR score IS NULL
     OR name IS NULL
     OR realm IS NULL
@@ -20,9 +17,9 @@ WHERE
     OR faction IS NULL;
 
 ALTER TABLE runs_raw
-    ALTER COLUMN timestamp
+    ALTER COLUMN completed_at
         TYPE timestamptz
-        USING timestamp::timestamptz;
+        USING completed_at::timestamptz;
 
 CREATE INDEX idx_raw
     ON runs_raw (name, realm, class, spec);

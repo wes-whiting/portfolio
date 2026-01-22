@@ -17,7 +17,7 @@ BEGIN
         'max (CASE WHEN dungeon = %L THEN score ELSE 0 END)
         OVER (
             PARTITION BY name, realm, class, spec
-            ORDER BY timestamp
+            ORDER BY completed_at
             ROWS BETWEEN unbounded preceding AND current row
         ) AS %I',
         dungeon,
@@ -41,7 +41,7 @@ BEGIN
         'CREATE TABLE runs_enriched AS
         SELECT *, (%s) AS total_score
         FROM (
-            SELECT name, realm, class, spec, dungeon, timestamp, score, role, %s
+            SELECT name, realm, class, spec, dungeon, completed_at, score, role, %s
             FROM runs_raw
         ) t',
         sum_score_columns,
