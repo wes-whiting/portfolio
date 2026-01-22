@@ -19,7 +19,7 @@ This repository includes:
 
 # Data Structure and Pipeline
 
-![Data pipeline image](pipeline.svg)
+![Data pipeline image](pipeline_erd.svg)
 
 The raw data from the Raider.IO API comes in JSON format with a complex nested structure and many keys, much of it irrelevant for our purpose. I queried the data in Python and stored the raw responses as a large .jsonl file. This gives a clean separation between data procurement and data processing, and allows me to include additional metrics in the future without needing to re-query the API. Then, I flattened the JSON data to one row per character and dungeon run, keeping only the relevant attributes: character demographic data (name, realm, class, spec, role, faction, race) and run data (dungeon, level, completion time, score).
 
