@@ -67,12 +67,12 @@ We saw that reaching 1500 early was not very predictive for the highest brackets
 
 Lastly, instead of filtering by players who climbed to lower brackets early, we can look at players who did reach title and see whether they climbed early. We see that the average title player did reach each bracket in quick succession and long before the general population, notably reaching 3400 before Turbo Boost and 3600 within two weeks after. Only the final climb from 3600 to 3804.8 took more than three weeks, and the average title player reached the title threshold more than a month before the end of the season.
 
-<img src="dashboard_images/title_threshold_dates.jpg.>
+<img src="dashboard_images/title_threshold_dates.jpg">
 
 ### Turbo Boost
 In a discussion of timeframes, it is important to note that TWW season 2 had a "Turbo Boost" starting on 5/13, which gave players access to increased item level and other rewards. Since players became more powerful but the difficulty of dungeons did not change, this made it easier to reach any given level after 5/13 than it was before. For this reason, some players wonder if it matters at all to push keys before 5/13.
 
-As we discussed above, brackets above 3000 offer no direct rewards, so players push these keys entirely for the sake of competition. These brackets are where we would expect the effect of the Turbo Boost to be most visible. We can see from the [Raider.IO cutoff history](https://raider.io/mythic-plus/cutoffs/season-tww-2/us) that as of 5/13, the top 0.1% rating cutoff was 3476 - that is, a player who was in the top 0.1% before turbo boost was in the 3400+ bracket at that time. So we will compare players who reached the 3400+ bracket before Turbo bBoost to players who reached it after.
+As we discussed above, brackets above 3000 offer no direct rewards, so players push these keys entirely for the sake of competition. These brackets are where we would expect the effect of the Turbo Boost to be most visible. We can see from the [Raider.IO cutoff history](https://raider.io/mythic-plus/cutoffs/season-tww-2/us) that as of 5/13, the top 0.1% rating cutoff was 3476 - that is, a player who was in the top 0.1% before turbo boost was in the 3400+ bracket at that time. So we will compare players who reached the 3400+ bracket before Turbo Boost to players who reached it after.
 
 <img src="dashboard_images/3400_pre_turbo.jpg" width=49%>
 <img src="dashboard_images/3400_post_turbo.jpg" width=49%>
