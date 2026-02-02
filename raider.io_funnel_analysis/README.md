@@ -35,9 +35,11 @@ The dashboard centers around a funnel chart showing how many players reach a giv
 
 # Insights Deep Dive
 
+## Where Are the Bottlenecks?
+First we will examine the entire dataset.
+
 ![Dashboard with slicers off](dashboard_images/slicers_off.jpg)
 
-## Where Are the Bottlenecks?
 Looking at the conversion rate from each bracket to the next, we see that brackets split into two categories: conversion rates of 55% or higher, which we will call easy transitions, and conversion rates of 30% or less, which we will call bottlenecks or hard transitions. In particular, the transition from 1500>2000, 2000>2500, and 3000>3200 appear to be easy, with most characters who reach those tiers also reaching the next. This indicates that not much filtering by skill or difficulty happens at these levels, and a player who reaches 1500 can generally also reach 2000 if they want to.
 
 The other transitions appear to be bottlenecks, namely 0>1500, 2500>3000, 3200>3400, 3400>3600, and 3600>title. This helps validate our use of artificial brackets in the gap between 3000/KSL and title, since getting from eg 3400 to 3600 appears to be about as hard as getting from 2500/KSH to 3000/KSL. The obvious hypothesis is to categorize these bottlenecks as follows:
@@ -52,18 +54,18 @@ We can analyze the effect of climbing earlier or later in the season using the b
 
 The first bottleneck occurs at 1500/KSC, which on average was reached on 5/3. Of the 284k players who reached this bracket, 161k did it before 5/3 and 123k after, so these groups are of similar size, but we can see that these groups had very different levels of success otherwise. The early group had significantly higher conversion rates to the next three brackets, although the difference in conversion rates becomes insignificant at the brackets above that. Overall, characters who reached 1500 early were more than twice as likely to reach 2500 or 3000 rating than characters who reached 1500 late, and on average reached more than 300 points higher by end of season. More than 75% of all characters who reached the top three brackets were in the group who reached 1500 early.
 
-<img src="dashboard_images/1500_early.jpg" width=49%>
-<img src="dashboard_images/1500_late.jpg" width=49%>
+<img src="dashboard_images/1500_early.jpg" width=45%>
+<img src="dashboard_images/1500_late.jpg" width=45%>
 
 The effect is even more pronounced if we compare characters who reached 1500 within the first two weeks of the season, and this group appears to retain a modest advantage in conversion rates even at the highest bracket.
 
-<img src="dashboard_images/1500_before_2weeks.jpg" width=49%>
-<img src="dashboard_images/1500_after_2weeks.jpg" width=49%>
+<img src="dashboard_images/1500_before_2weeks.jpg" width=45%>
+<img src="dashboard_images/1500_after_2weeks.jpg" width=45%>
 
 We saw that reaching 1500 early was not very predictive for the highest brackets. What about reaching 3000 early? Although these two groups are similar in size, we see a pronounced difference in their conversion rate for  the next two brackets, with early players averaging 140 more rating and triple the chance to reach the 3400 bracket, but again there is no difference in conversion rate at the two highest brackets.
 
-<img src="dashboard_images/3000_early.jpg" width=49%>
-<img src="dashboard_images/3000_late.jpg" width=49%>
+<img src="dashboard_images/3000_early.jpg" width=45%>
+<img src="dashboard_images/3000_late.jpg" width=45%>
 
 Lastly, instead of filtering by players who climbed to lower brackets early, we can look at players who did reach title and see whether they climbed early. We see that the average title player did reach each bracket in quick succession and long before the general population, notably reaching 3400 before Turbo Boost and 3600 within two weeks after. Only the final climb from 3600 to 3804.8 took more than three weeks, and the average title player reached the title threshold more than a month before the end of the season.
 
@@ -74,8 +76,8 @@ In a discussion of timeframes, it is important to note that TWW season 2 had a "
 
 As we discussed above, brackets above 3000 offer no direct rewards, so players push these keys entirely for the sake of competition. These brackets are where we would expect the effect of the Turbo Boost to be most visible. We can see from the [Raider.IO cutoff history](https://raider.io/mythic-plus/cutoffs/season-tww-2/us) that as of 5/13, the top 0.1% rating cutoff was 3476 - that is, a player who was in the top 0.1% before turbo boost was in the 3400+ bracket at that time. So we will compare players who reached the 3400+ bracket before Turbo Boost to players who reached it after.
 
-<img src="dashboard_images/3400_pre_turbo.jpg" width=49%>
-<img src="dashboard_images/3400_post_turbo.jpg" width=49%>
+<img src="dashboard_images/3400_pre_turbo.jpg" width=45%>
+<img src="dashboard_images/3400_post_turbo.jpg" width=45%>
 
 The difference here is dramatic, and this is the only thing so far that has made a significant difference in conversion rate at title level. Players who reached 3400 before the turbo boost were ten times more successful overall in reaching title, and averaged 173 higher rating overall.
 
