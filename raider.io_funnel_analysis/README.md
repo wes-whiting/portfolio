@@ -73,29 +73,35 @@ The first bottleneck occurs at 1500, which on average was reached on 5/3. Of the
 The effect is even more pronounced if we compare characters who reached 1500 within the first two weeks of the season, and this group appears to retain a modest advantage in conversion rates even at the highest bracket.
 
 <table>
-    <caption>Reaching 1500 before vs after 2 weeks into the season</caption>
-  <tr>
-    <td>
-      <img src="dashboard_images/1500_before_2weeks.jpg" width="100%">
-    </td>
-    <td>
-      <img src="dashboard_images/1500_after_2weeks.jpg" width="100%">
-    </td>
-  </tr>
+    <tr>
+        <th>1500 before the 2-week mark</th>
+        <th>1500 after the 2-week mark</th>
+    </tr>
+    <tr>
+        <td>
+            <img src="dashboard_images/1500_before_2weeks.jpg" width="100%">
+        </td>
+        <td>
+            <img src="dashboard_images/1500_after_2weeks.jpg" width="100%">
+        </td>
+    </tr>
 </table>
 
 We saw that reaching 1500 early was not very predictive for the highest brackets. What about reaching 3000 early? Although these two groups are similar in size, we see a pronounced difference in their conversion rate for  the next two brackets, with early players averaging 140 more rating and triple the chance to reach the 3400 bracket, but again there is no difference in conversion rate at the two highest brackets.
 
 <table>
-    <caption>Reaching 3000 early vs late</caption>
-  <tr>
-    <td>
-      <img src="dashboard_images/3000_early.jpg" width="100%">
-    </td>
-    <td>
-      <img src="dashboard_images/3000_late.jpg" width="100%">
-    </td>
-  </tr>
+    <tr>
+        <th>3000 earlier than average</th>
+        <th>3000 later than average</th>
+    </tr>
+    <tr>
+        <td>
+            <img src="dashboard_images/3000_early.jpg" width="100%">
+        </td>
+        <td>
+            <img src="dashboard_images/3000_late.jpg" width="100%">
+        </td>
+    </tr>
 </table>
 
 Lastly, instead of filtering by players who climbed to lower brackets early, we can look at players who did reach title and see whether they climbed early. We see that the average title player did reach each bracket in quick succession and long before the general population, notably reaching 3400 before Turbo Boost and 3600 within two weeks after. Only the final climb from 3600 to 3804.8 took more than three weeks, and the average title player reached the title threshold more than a month before the end of the season.
@@ -108,15 +114,18 @@ In a discussion of timeframes, it is important to note that TWW season 2 had a "
 As we discussed above, brackets above 3000 offer no direct rewards, so players push these keys entirely for the sake of competition. These brackets are where we would expect the effect of the Turbo Boost to be most visible. We can see from the [Raider.IO cutoff history](https://raider.io/mythic-plus/cutoffs/season-tww-2/us) that as of 5/13, the top 0.1% rating cutoff was 3476 - that is, a player who was in the top 0.1% before turbo boost was in the 3400+ bracket at that time. So we will compare players who reached the 3400+ bracket before Turbo Boost to players who reached it after.
 
 <table>
-    <caption>Reaching 3400 before vs after the turbo boost</caption>
-  <tr>
-    <td>
-      <img src="dashboard_images/3400_pre_turbo.jpg" width="100%">
-    </td>
-    <td>
-      <img src="dashboard_images/3400_post_turbo.jpg" width="100%">
-    </td>
-  </tr>
+    <tr>
+        <th>3400 before turbo boost</th>
+        <th>3400 after turbo boost</th>
+    </tr>
+    <tr>
+        <td>
+            <img src="dashboard_images/3400_pre_turbo.jpg" width="100%">
+        </td>
+        <td>
+            <img src="dashboard_images/3400_post_turbo.jpg" width="100%">
+        </td>
+    </tr>
 </table>
 
 The difference here is dramatic, and this is the only thing so far that has made a significant difference in conversion rate at title level. Players who reached 3400 before the turbo boost were ten times more successful overall in reaching title, and averaged 173 higher rating overall.
