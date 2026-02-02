@@ -55,7 +55,10 @@ We can analyze the effect of climbing earlier or later in the season using the b
 The first bottleneck occurs at 1500, which on average was reached on 5/3. Of the 284k players who reached this bracket, 161k did it before 5/3 and 123k after, so these groups are of similar size, but we can see that these groups had very different levels of success otherwise. The early group had significantly higher conversion rates to the next three brackets, although the difference in conversion rates becomes insignificant at the brackets above that. Overall, characters who reached 1500 early were more than twice as likely to reach 2500 or 3000 rating than characters who reached 1500 late, and on average reached more than 300 points higher by end of season. More than 75% of all characters who reached the top three brackets were in the group who reached 1500 early.
 
 <table>
-    <caption>Reaching 1500 early vs late</caption>
+    <tr>
+        <th>1500 earlier than average</th>
+        <th>1500 later than average</th>
+    </tr>
     <tr>
         <td>
             <img src="dashboard_images/1500_early.jpg" width="100%">
